@@ -1,5 +1,11 @@
 import { Hero } from "@/components/ui/home/hero";
+import { Stats } from "@/components/ui/home/state";
 
 export default function Home() {
-  return <Hero />;
+  return (
+    <>
+      <Hero />
+      <Stats />
+    </>
+  );
 }
