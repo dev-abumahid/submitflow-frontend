@@ -3,7 +3,7 @@ import Link from "next/link";
 const actions = [
   {
     label: "Get Started Now",
-    href: "/get-started",
+    href: "/sign-up",
     variant: "primary",
     icon: "arrow",
   },

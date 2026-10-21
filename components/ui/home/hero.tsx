@@ -48,7 +48,7 @@ export function Hero() {
 
           <div className="mt-8 flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row">
             <Link
-              href="/get-started"
+              href="/sign-up"
               className="inline-flex w-full items-center justify-center gap-1 rounded-lg bg-indigo-600 px-6 py-3 text-sm font-medium leading-5 text-white shadow-md transition-colors hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50 sm:w-auto"
             >
               Start Free Trial
