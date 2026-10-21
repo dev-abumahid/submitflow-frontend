@@ -5,13 +5,13 @@ import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import type { ComponentType } from "react";
 import {
-  ClipboardCheckIcon,
   ClockIcon,
   CloseIcon,
   FileUpIcon,
   GridIcon,
   LayersIcon,
   LogOutIcon,
+  UserIcon,
   type IconProps,
 } from "@/components/dashboard/icons";
 import { studentProfile } from "@/components/dashboard/profile";
@@ -23,7 +23,8 @@ const workspaceLinks: {
 }[] = [
   { label: "Dashboard", href: "/dashboard", icon: GridIcon },
   { label: "Submit Project", href: "/submit", icon: FileUpIcon },
-  { label: "Submissions", href: "/submissions", icon: ClockIcon }
+  { label: "Submissions", href: "/submissions", icon: ClockIcon },
+  { label: "Profile", href: "/profile", icon: UserIcon },
 ];
 
 export function LeftSidebar({

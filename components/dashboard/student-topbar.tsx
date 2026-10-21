@@ -14,6 +14,7 @@ const pageLabels: Record<string, string> = {
   "/submit": "Submit Project",
   "/submissions": "Submissions",
   "/reviews": "Grades & Reviews",
+  "/profile": "Profile",
 };
 
 export function StudentTopbar({
@@ -76,7 +77,7 @@ export function StudentTopbar({
         </button>
 
         <Link
-          href="/account"
+          href="/profile"
           aria-label={`Open account menu for ${studentProfile.name}`}
           className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-700 text-xs font-semibold leading-4 tracking-tight text-white shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] transition-colors hover:bg-indigo-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2"
         >

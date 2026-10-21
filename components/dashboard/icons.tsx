@@ -353,6 +353,89 @@ export function ArrowUpDownIcon({ className }: IconProps) {
   );
 }
 
+export function CalendarIcon({ className }: IconProps) {
+  return (
+    <BaseIcon className={className}>
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M16 3v4M8 3v4M3 11h18" />
+    </BaseIcon>
+  );
+}
+
+export function FolderIcon({ className }: IconProps) {
+  return (
+    <BaseIcon className={className}>
+      <path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6Z" />
+    </BaseIcon>
+  );
+}
+
+export function SlidersHorizontalIcon({ className }: IconProps) {
+  return (
+    <BaseIcon className={className}>
+      <path d="M4 7h10M18 7h2M4 17h2M10 17h10" />
+      <circle cx="16" cy="7" r="2" />
+      <circle cx="8" cy="17" r="2" />
+    </BaseIcon>
+  );
+}
+
+export function XCircleIcon({ className }: IconProps) {
+  return (
+    <BaseIcon className={className}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="m9 9 6 6M15 9l-6 6" />
+    </BaseIcon>
+  );
+}
+
+export function ChevronLeftIcon({ className }: IconProps) {
+  return (
+    <BaseIcon className={className}>
+      <path d="m15 18-6-6 6-6" />
+    </BaseIcon>
+  );
+}
+
+export function UserIcon({ className }: IconProps) {
+  return (
+    <BaseIcon className={className}>
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21a8 8 0 0 1 16 0" />
+    </BaseIcon>
+  );
+}
+
+export function LockIcon({ className }: IconProps) {
+  return (
+    <BaseIcon className={className}>
+      <rect x="4" y="10" width="16" height="11" rx="2" />
+      <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+      <path d="M12 15v2" />
+    </BaseIcon>
+  );
+}
+
+export function EyeIcon({ className }: IconProps) {
+  return (
+    <BaseIcon className={className}>
+      <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" />
+      <circle cx="12" cy="12" r="2.5" />
+    </BaseIcon>
+  );
+}
+
+export function EyeOffIcon({ className }: IconProps) {
+  return (
+    <BaseIcon className={className}>
+      <path d="M3 3l18 18" />
+      <path d="M10.6 6.2A10.9 10.9 0 0 1 12 6c6.5 0 10 6 10 6a17.7 17.7 0 0 1-3.1 3.7" />
+      <path d="M6.6 6.6C3.6 8.5 2 12 2 12s3.5 6 10 6a10.9 10.9 0 0 0 5.4-1.4" />
+      <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+    </BaseIcon>
+  );
+}
+
 export function GithubIcon({ className }: IconProps) {
   return (
     <svg
