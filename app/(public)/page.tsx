@@ -1,3 +1,4 @@
+import { Faq } from "@/components/ui/home/faq";
 import { Hero } from "@/components/ui/home/hero";
 import { Stats } from "@/components/ui/home/state";
 
@@ -6,6 +7,7 @@ export default function Home() {
     <>
       <Hero />
       <Stats />
+      <Faq />
     </>
   );
 }
