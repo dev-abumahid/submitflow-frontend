@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Footer } from "@/components/shared/footer";
 import { Nav } from "@/components/shared/nav";
 
 export default function PublicLayout({ children }: { children: ReactNode }) {
@@ -14,6 +15,7 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
       <main id="main-content" className="flex flex-1 flex-col">
         {children}
       </main>
+      <Footer />
     </div>
   );
 }
