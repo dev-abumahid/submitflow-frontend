@@ -14,6 +14,7 @@ import {
   type IconProps,
 } from "@/components/dashboard/icons";
 import { mentorProfile } from "@/components/mentor/profile";
+import { useAuth } from "@/context/auth-context";
 
 const mentorLinks: {
   label: string;
@@ -101,6 +102,16 @@ function SidebarBody({
   onNavigate?: () => void;
   onClose?: () => void;
 }) {
+  const { user, logout } = useAuth();
+  const displayName = user?.fullName || mentorProfile.name;
+  const initials = displayName
+    .split(" ")
+    .map((p) => p[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+  const roleLabel = user?.role === "MENTOR" ? "Lead Mentor" : user?.role || mentorProfile.role;
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-slate-100 px-5">
@@ -169,24 +180,25 @@ function SidebarBody({
         <div className="flex items-center justify-between gap-2 rounded-xl bg-blue-50 p-2">
           <div className="flex min-w-0 items-center gap-2">
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-700 text-xs font-semibold leading-4 tracking-tight text-white shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]">
-              {mentorProfile.initials}
+              {initials}
             </span>
             <div className="min-w-0">
               <p className="truncate text-xs font-semibold leading-4 text-slate-900">
-                {mentorProfile.name}
+                {displayName}
               </p>
               <span className="mt-0.5 inline-flex rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold leading-3 tracking-tight text-indigo-700">
-                {mentorProfile.role}
+                {roleLabel}
               </span>
             </div>
           </div>
-          <Link
-            href="/sign-in"
+          <button
+            type="button"
+            onClick={() => logout()}
             aria-label="Sign out"
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-700 transition-colors hover:bg-white hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
           >
             <LogOutIcon className="h-3.5 w-3.5" />
-          </Link>
+          </button>
         </div>
       </div>
     </div>

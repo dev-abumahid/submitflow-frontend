@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { Suspense, useCallback, useState } from "react";
 import type { ReactNode } from "react";
 import { MentorSidebar } from "@/components/mentor/left-sidebar";
 import { MentorTopbar } from "@/components/mentor/topbar";
@@ -20,10 +20,14 @@ export function MentorLayout({ children }: { children: ReactNode }) {
         Skip to review dashboard content
       </a>
 
-      <MentorSidebar open={sidebarOpen} onClose={closeSidebar} />
+      <Suspense fallback={null}>
+        <MentorSidebar open={sidebarOpen} onClose={closeSidebar} />
+      </Suspense>
 
       <div className="flex min-h-dvh flex-col lg:pl-64">
-        <MentorTopbar onOpenSidebar={openSidebar} />
+        <Suspense fallback={null}>
+          <MentorTopbar onOpenSidebar={openSidebar} />
+        </Suspense>
         <main
           id="mentor-main"
           className="flex-1 px-4 pb-8 pt-6 sm:px-5 lg:pb-5 lg:pt-8"

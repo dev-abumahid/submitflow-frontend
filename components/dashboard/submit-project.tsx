@@ -2,156 +2,123 @@
 
 import { useState } from "react";
 import type { ChangeEvent, ReactNode } from "react";
-import type { ComponentType } from "react";
+import { useRouter } from "next/navigation";
+import axios from "axios";
 import {
   ArrowRightIcon,
   CheckCircleIcon,
-  ClipboardCheckIcon,
   ExternalLinkIcon,
   FileTextIcon,
   GithubIcon,
   GlobeIcon,
   InfoIcon,
   PencilIcon,
-  ShieldCheckIcon,
-  type IconProps,
 } from "@/components/dashboard/icons";
+import { projectApi } from "@/lib/api";
 
 const initialForm = {
-  projectName: "DevPulse — Real-Time Systems Health Monitor",
-  githubUrl: "https://github.com/alex-morgan/devpulse-engine",
-  liveUrl: "https://devpulse.vercel.app",
-  description:
-    "DevPulse is an open-source observability dashboard providing real-time telemetry streaming and health analytics for containerized microservices. Built with Next.js 14, TailwindCSS, TypeScript, and Go backend with WebSockets for sub-50ms latency updates. Includes role-based auth, automated incident alerting, and customizable SLA health probes.",
+  name: "",
+  gitRepoUrl: "",
+  previewUrl: "",
+  description: "",
 };
 
-const submissionInfo: {
-  label: string;
-  value: string;
-  icon: ComponentType<IconProps>;
-}[] = [
-  {
-    label: "Submission Slot",
-    value: "1 / 1 Available",
-    icon: ClipboardCheckIcon,
-  },
-  {
-    label: "Status Guardrail",
-    value: "Unlocked",
-    icon: ShieldCheckIcon,
-  },
-];
-
-function isValidGithubUrl(value: string) {
-  return /^https:\/\/(www\.)?github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/?$/.test(
-    value.trim(),
-  );
-}
-
-function isValidHttpsUrl(value: string) {
+function isValidHttpOrHttpsUrl(value: string) {
   try {
-    return new URL(value.trim()).protocol === "https:";
+    const url = new URL(value.trim());
+    return url.protocol === "http:" || url.protocol === "https:";
   } catch {
     return false;
   }
 }
 
 export function SubmitProject() {
+  const router = useRouter();
   const [form, setForm] = useState(initialForm);
-  const [draftSaved, setDraftSaved] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const projectNameIsValid =
-    form.projectName.trim().length >= 3 &&
-    form.projectName.trim().length <= 100;
-  const githubIsValid = isValidGithubUrl(form.githubUrl);
-  const liveUrlIsValid = isValidHttpsUrl(form.liveUrl);
+  const nameIsValid =
+    form.name.trim().length >= 1 && form.name.trim().length <= 200;
+  const gitRepoIsValid =
+    isValidHttpOrHttpsUrl(form.gitRepoUrl) && form.gitRepoUrl.trim().length <= 500;
+  const previewIsValid =
+    isValidHttpOrHttpsUrl(form.previewUrl) && form.previewUrl.trim().length <= 500;
   const descriptionIsValid =
-    form.description.trim().length >= 30 &&
-    form.description.trim().length <= 2000;
+    form.description.trim().length >= 1 &&
+    form.description.trim().length <= 5000;
 
   const linkChecks = [
-    { label: "GitHub Reachable", isValid: githubIsValid },
-    { label: "HTTPS 200 OK", isValid: liveUrlIsValid },
-    {
-      label: "Schema Valid",
-      isValid:
-        projectNameIsValid &&
-        githubIsValid &&
-        liveUrlIsValid &&
-        descriptionIsValid,
-    },
+    { label: "Project Title", isValid: nameIsValid },
+    { label: "Git Repository URL", isValid: gitRepoIsValid },
+    { label: "Live Preview URL", isValid: previewIsValid },
+    { label: "Project Description", isValid: descriptionIsValid },
   ];
 
   const passedChecks = linkChecks.filter((check) => check.isValid).length;
   const validationPercent = Math.round(
-    (passedChecks / linkChecks.length) * 100,
+    (passedChecks / linkChecks.length) * 100
   );
   const isReadyToSubmit =
-    projectNameIsValid &&
-    githubIsValid &&
-    liveUrlIsValid &&
-    descriptionIsValid;
+    nameIsValid && gitRepoIsValid && previewIsValid && descriptionIsValid;
 
   const updateField =
     (field: keyof typeof initialForm) =>
     (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      setDraftSaved(false);
+      setErrorMessage(null);
       setForm((current) => ({ ...current, [field]: event.target.value }));
     };
 
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!isReadyToSubmit) return;
+
+    setLoading(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    try {
+      await projectApi.createProject({
+        name: form.name.trim(),
+        gitRepoUrl: form.gitRepoUrl.trim(),
+        previewUrl: form.previewUrl.trim(),
+        description: form.description.trim(),
+      });
+
+      setSuccessMessage("Project submitted successfully! Redirecting...");
+      setTimeout(() => {
+        router.push("/submissions");
+      }, 1000);
+    } catch (err: unknown) {
+      let msg = "Failed to submit project. Please verify all fields.";
+      if (axios.isAxiosError(err) && err.response?.data) {
+        const data = err.response.data as {
+          message?: string;
+          errorSources?: { message: string }[];
+        };
+        msg = data.message || data.errorSources?.[0]?.message || msg;
+      }
+      setErrorMessage(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
-        <div className="flex flex-col gap-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold uppercase leading-4 tracking-wide text-indigo-700">
-              Cohort 12 • Final Capstone Milestone
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-100 px-2.5 py-1 text-xs font-semibold leading-4 tracking-tight text-gray-700">
-              <span
-                className="h-1.5 w-1.5 rounded-full bg-indigo-700"
-                aria-hidden="true"
-              />
-              Window open: closes in 4 days
-            </span>
-          </div>
-          <h1 className="pt-1 font-serif text-2xl font-semibold leading-9 tracking-tight text-slate-900 sm:text-3xl sm:leading-10">
-            Submit Your Project
-          </h1>
-          <p className="text-pretty text-sm leading-5 text-gray-700">
-            Share your work and get it audited and certified by an assigned
-            senior mentor.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:flex xl:flex-row">
-          {submissionInfo.map((item) => {
-            const Icon = item.icon;
-
-            return (
-              <div
-                key={item.label}
-                className="flex min-w-0 items-center gap-3 rounded-xl bg-white px-3 py-2 shadow-sm ring-1 ring-inset ring-slate-200/60"
-              >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-indigo-700">
-                  <Icon className="h-4 w-4" />
-                </span>
-                <div className="min-w-0 pr-1">
-                  <p className="text-xs font-semibold leading-4 tracking-tight text-gray-500">
-                    {item.label}
-                  </p>
-                  <p className="whitespace-nowrap text-xs font-semibold leading-4 text-slate-900">
-                    {item.value}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+      <header className="flex flex-col gap-2">
+        <h1 className="font-serif text-2xl font-semibold leading-9 tracking-tight text-slate-900 sm:text-3xl sm:leading-10">
+          Submit Your Project
+        </h1>
+        <p className="text-pretty text-sm leading-5 text-gray-700">
+          Share your repository and live preview link to have your project
+          evaluated by our mentors.
+        </p>
       </header>
 
       <form
-        onSubmit={(event) => event.preventDefault()}
+        onSubmit={handleSubmit}
         className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-inset ring-slate-200/60 sm:p-6 lg:p-8"
       >
         <div className="flex flex-col gap-3">
@@ -161,121 +128,108 @@ export function SubmitProject() {
                 Project Submission Form
               </h2>
               <p className="text-pretty text-xs leading-4 text-gray-700">
-                Please provide accurate repository and deployment links for
-                staff audit.
+                Provide your project details, git repository, and live deployment.
               </p>
             </div>
             <span className="w-fit shrink-0 rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-semibold uppercase leading-4 tracking-tight text-indigo-700">
-              Mandatory
+              Starts as Pending
             </span>
           </div>
 
-          <div className="flex items-start gap-3 rounded-lg bg-blue-50 p-3">
-            <InfoIcon className="mt-0.5 h-4 w-4 shrink-0 text-indigo-700" />
-            <div>
-              <p className="text-xs font-semibold leading-4 text-slate-900">
-                Policy Reminder: Single Active Submission
-              </p>
-              <p className="pt-0.5 text-pretty text-xs leading-4 text-gray-700">
-                Each student may submit only 1 active project at a time. Once
-                submitted, your repository commit snapshot is locked for mentor
-                evaluation.
-              </p>
+          {errorMessage && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-700">
+              {errorMessage}
             </div>
-          </div>
+          )}
+
+          {successMessage && (
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs font-medium text-emerald-700">
+              {successMessage}
+            </div>
+          )}
         </div>
 
         <div className="mt-5 flex flex-col gap-5">
           <FormField
-            id="project-name"
+            id="name"
             label="Project Name"
-            badge={<FieldBadge>3–100 chars</FieldBadge>}
+            badge={<FieldBadge>1–200 chars</FieldBadge>}
             hint={
               <p className="flex items-start gap-1 text-xs leading-4 text-gray-700">
                 <InfoIcon className="mt-0.5 h-3 w-3 shrink-0 text-gray-500" />
-                Give your project a descriptive, professional title reflecting
-                its core value.
+                Give your project a descriptive title reflecting its purpose.
               </p>
             }
           >
             <div className="relative">
               <input
-                id="project-name"
-                name="projectName"
+                id="name"
+                name="name"
                 type="text"
                 required
-                minLength={3}
-                maxLength={100}
-                value={form.projectName}
-                onChange={updateField("projectName")}
-                aria-invalid={!projectNameIsValid}
-                aria-describedby="project-name-hint"
-                className={`${inputClassName} ${
-                  projectNameIsValid ? "" : invalidInputClassName
-                }`}
+                minLength={1}
+                maxLength={200}
+                placeholder="e.g. Portfolio Website or E-Commerce App"
+                value={form.name}
+                onChange={updateField("name")}
+                className={inputClassName}
               />
               <PencilIcon className="pointer-events-none absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-500" />
             </div>
           </FormField>
 
           <FormField
-            id="github-url"
-            label="GitHub Repository URL"
-            badge={<FieldBadge tone="blue">Public Repo</FieldBadge>}
+            id="git-repo-url"
+            label="Git Repository URL"
+            badge={<FieldBadge tone="blue">HTTP/HTTPS Required</FieldBadge>}
             hint={
               <p className="flex items-start gap-1 text-xs leading-4 text-gray-700">
                 <GithubIcon className="mt-0.5 h-3 w-3 shrink-0 text-gray-500" />
-                Must be a valid public GitHub repository. Ensure your main
-                branch contains clean code and a comprehensive README.
+                Must start with http:// or https:// (e.g. https://github.com/username/project).
               </p>
             }
           >
             <div className="relative">
               <input
-                id="github-url"
-                name="githubUrl"
+                id="git-repo-url"
+                name="gitRepoUrl"
                 type="url"
                 autoComplete="url"
                 required
-                value={form.githubUrl}
-                onChange={updateField("githubUrl")}
-                aria-invalid={!githubIsValid}
-                aria-describedby="github-url-hint"
-                className={`${inputClassName} pr-10 ${
-                  githubIsValid ? "" : invalidInputClassName
-                }`}
+                maxLength={500}
+                placeholder="https://github.com/username/repository"
+                value={form.gitRepoUrl}
+                onChange={updateField("gitRepoUrl")}
+                className={`${inputClassName} pr-10`}
               />
               <GithubIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-900" />
-              <ValidationIcon isValid={githubIsValid} />
+              <ValidationIcon isValid={gitRepoIsValid} />
             </div>
           </FormField>
 
           <FormField
-            id="live-url"
+            id="preview-url"
             label="Live Project URL"
-            badge={<FieldBadge>HTTPS Required</FieldBadge>}
+            badge={<FieldBadge>HTTP/HTTPS Required</FieldBadge>}
             hint={
               <p className="flex items-start gap-1 text-xs leading-4 text-gray-700">
                 <GlobeIcon className="mt-0.5 h-3 w-3 shrink-0 text-gray-500" />
-                Must be an active HTTPS deployment (e.g. Vercel, Netlify,
-                Railway, or AWS).
+                Must start with http:// or https:// (e.g. https://myproject.vercel.app).
               </p>
             }
           >
             <div className="relative">
               <input
-                id="live-url"
-                name="liveUrl"
+                id="preview-url"
+                name="previewUrl"
                 type="url"
                 autoComplete="url"
                 required
-                value={form.liveUrl}
-                onChange={updateField("liveUrl")}
-                aria-invalid={!liveUrlIsValid}
-                aria-describedby="live-url-hint"
-                className={`${inputClassName} pr-10 ${
-                  liveUrlIsValid ? "" : invalidInputClassName
-                }`}
+                maxLength={500}
+                placeholder="https://my-project.vercel.app"
+                value={form.previewUrl}
+                onChange={updateField("previewUrl")}
+                className={`${inputClassName} pr-10`}
               />
               <GlobeIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
               <ExternalLinkIcon className="pointer-events-none absolute right-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-500" />
@@ -283,62 +237,44 @@ export function SubmitProject() {
           </FormField>
 
           <FormField
-            id="project-description"
+            id="description"
             label="Project Description"
             badge={
               <FieldBadge>
-                {form.description.length} / 2000 chars (Min 30 chars)
+                {form.description.length} / 5000 chars
               </FieldBadge>
             }
             hint={
-              <div className="flex flex-col justify-between gap-1 text-xs leading-4 sm:flex-row sm:items-center">
-                <p className="flex items-start gap-1 text-gray-700">
-                  <FileTextIcon className="mt-0.5 h-3 w-3 shrink-0 text-gray-500" />
-                  Summarize architecture, frameworks used, and testing
-                  credentials.
-                </p>
-                <p
-                  className={
-                    descriptionIsValid
-                      ? "font-medium text-indigo-700"
-                      : "font-medium text-amber-700"
-                  }
-                  aria-live="polite"
-                >
-                  {descriptionIsValid
-                    ? "✓ Meets length requirement"
-                    : `Add ${Math.max(0, 30 - form.description.trim().length)} more characters`}
-                </p>
-              </div>
+              <p className="flex items-start gap-1 text-xs leading-4 text-gray-700">
+                <FileTextIcon className="mt-0.5 h-3 w-3 shrink-0 text-gray-500" />
+                Describe the key features, architecture, and technology stack used.
+              </p>
             }
           >
             <textarea
-              id="project-description"
+              id="description"
               name="description"
               required
-              minLength={30}
-              maxLength={2000}
-              rows={7}
+              minLength={1}
+              maxLength={5000}
+              rows={6}
+              placeholder="Provide a comprehensive summary of your project..."
               value={form.description}
               onChange={updateField("description")}
-              aria-invalid={!descriptionIsValid}
-              aria-describedby="description-hint"
-              className={`min-h-36 w-full resize-y rounded-lg border border-slate-300 bg-white px-3.5 py-3 text-sm leading-6 text-slate-900 shadow-sm outline-none transition-colors placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 ${
-                descriptionIsValid ? "" : invalidInputClassName
-              }`}
+              className="min-h-32 w-full resize-y rounded-lg border border-slate-300 bg-white px-3.5 py-3 text-sm leading-6 text-slate-900 shadow-sm outline-none transition-colors placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30"
             />
           </FormField>
 
           <section
-            aria-labelledby="link-validation-heading"
+            aria-labelledby="form-completeness"
             className="rounded-xl bg-blue-50 p-4"
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h3
-                id="link-validation-heading"
+                id="form-completeness"
                 className="text-xs font-medium leading-4 tracking-tight text-gray-700"
               >
-                Automated Link Validation Status
+                Submission Checklist
               </h3>
               <p
                 className="text-xs font-semibold leading-4 tracking-tight text-indigo-700"
@@ -350,7 +286,7 @@ export function SubmitProject() {
             <div
               className="mt-2 h-1.5 overflow-hidden rounded-full bg-sky-100"
               role="progressbar"
-              aria-label="Automated link validation"
+              aria-label="Submission Checklist"
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={validationPercent}
@@ -360,7 +296,7 @@ export function SubmitProject() {
                 style={{ width: `${validationPercent}%` }}
               />
             </div>
-            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
               {linkChecks.map((check) => (
                 <p
                   key={check.label}
@@ -392,20 +328,13 @@ export function SubmitProject() {
                 : "Complete all required fields to submit your project."}
             </p>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setDraftSaved(true)}
-                className="rounded-lg bg-blue-50 px-3 py-2.5 text-sm font-medium leading-5 text-slate-900 transition-colors hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2"
-              >
-                {draftSaved ? "Draft Saved" : "Save Draft"}
-              </button>
+            <div className="flex items-center gap-2">
               <button
                 type="submit"
-                disabled={!isReadyToSubmit}
+                disabled={!isReadyToSubmit || loading}
                 className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-700 px-5 py-2.5 text-sm font-semibold leading-5 text-white shadow-sm transition-colors hover:bg-indigo-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Submit Project for Review
+                {loading ? "Submitting..." : "Submit Project for Review"}
                 <ArrowRightIcon className="h-3 w-3" />
               </button>
             </div>
@@ -418,9 +347,6 @@ export function SubmitProject() {
 
 const inputClassName =
   "w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-10 pr-4 text-sm leading-5 text-slate-900 shadow-sm outline-none transition-colors placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30";
-
-const invalidInputClassName =
-  "border-red-400 focus:border-red-500 focus:ring-red-500/20";
 
 function FormField({
   id,

@@ -2,123 +2,173 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import axios from "axios";
 import { AuthShell } from "@/components/ui/auth/auth-shell";
+import { useAuth } from "@/context/auth-context";
 
 export function Login() {
+  const router = useRouter();
+  const { login } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+    setLoading(true);
+
+    try {
+      const user = await login(email, password);
+      if (user.role === "MENTOR") {
+        router.push("/mentor/dashboard");
+      } else {
+        router.push("/dashboard");
+      }
+    } catch (err: unknown) {
+      let serverMessage = "Invalid email or password. Please try again.";
+      if (axios.isAxiosError(err) && err.response?.data) {
+        const data = err.response.data as {
+          message?: string;
+          errorSources?: { message: string }[];
+        };
+        serverMessage =
+          data.message ||
+          data.errorSources?.[0]?.message ||
+          serverMessage;
+      }
+      setErrorMessage(serverMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <AuthShell labelledBy="login-heading" promo={<PromoPanel />}>
-      <form className="flex flex-col gap-6">
-              <div className="flex flex-col gap-2 pb-2">
-                <h1
-                  id="login-heading"
-                  className="text-3xl font-bold leading-9 tracking-tight text-slate-900"
-                >
-                  Welcome back
-                </h1>
-                <p className="text-sm font-normal leading-5 text-slate-500">
-                  Sign in to continue to SubmitFlow
-                </p>
-              </div>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+        <div className="flex flex-col gap-2 pb-2">
+          <h1
+            id="login-heading"
+            className="text-3xl font-bold leading-9 tracking-tight text-slate-900"
+          >
+            Welcome back
+          </h1>
+          <p className="text-sm font-normal leading-5 text-slate-500">
+            Sign in to continue to SubmitFlow
+          </p>
+        </div>
 
-              <div className="flex flex-col gap-5">
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="email"
-                    className="text-xs font-semibold uppercase leading-4 tracking-tight text-slate-900"
-                  >
-                    Email address
-                  </label>
-                  <div className="relative">
-                    <input
-                      id="email"
-                      name="email"
-                      type="email"
-                      autoComplete="email"
-                      required
-                      placeholder="you@university.edu or you@company.com"
-                      className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 pr-10 text-sm text-slate-900 shadow-sm outline-none transition-colors placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30"
-                    />
-                    <MailIcon className="pointer-events-none absolute right-3.5 top-1/2 h-3 w-3.5 -translate-y-1/2 text-slate-400" />
-                  </div>
-                </div>
+        {errorMessage && (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-3.5 text-xs font-medium text-red-700">
+            {errorMessage}
+          </div>
+        )}
 
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between gap-3">
-                    <label
-                      htmlFor="password"
-                      className="text-xs font-semibold uppercase leading-4 tracking-tight text-slate-900"
-                    >
-                      Password
-                    </label>
-                    <Link
-                      href="/forgot-password"
-                      className="rounded-sm text-xs font-medium leading-4 text-indigo-600 transition-colors hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50"
-                    >
-                      Forgot password?
-                    </Link>
-                  </div>
-                  <div className="relative">
-                    <input
-                      id="password"
-                      name="password"
-                      type={showPassword ? "text" : "password"}
-                      autoComplete="current-password"
-                      required
-                      placeholder="Enter your password"
-                      className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 pr-11 text-sm text-slate-900 shadow-sm outline-none transition-colors placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((visible) => !visible)}
-                      aria-label={showPassword ? "Hide password" : "Show password"}
-                      aria-pressed={showPassword}
-                      className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
-                    >
-                      {showPassword ? (
-                        <EyeOffIcon className="h-3 w-3 text-current" />
-                      ) : (
-                        <EyeIcon className="h-4 w-3 text-current" />
-                      )}
-                    </button>
-                  </div>
-                </div>
+        <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="email"
+              className="text-xs font-semibold uppercase leading-4 tracking-tight text-slate-900"
+            >
+              Email address
+            </label>
+            <div className="relative">
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@university.edu or mentor@gmail.com"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 pr-10 text-sm text-slate-900 shadow-sm outline-none transition-colors placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30"
+              />
+              <MailIcon className="pointer-events-none absolute right-3.5 top-1/2 h-3 w-3.5 -translate-y-1/2 text-slate-400" />
+            </div>
+          </div>
 
-                <label className="flex items-center gap-2.5 pt-0.5 text-xs font-normal leading-4 text-slate-600">
-                  <input
-                    type="checkbox"
-                    name="remember"
-                    defaultChecked
-                    className="h-4 w-4 rounded border-slate-300 accent-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2"
-                  />
-                  Remember this machine for 30 days
-                </label>
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between gap-3">
+              <label
+                htmlFor="password"
+                className="text-xs font-semibold uppercase leading-4 tracking-tight text-slate-900"
+              >
+                Password
+              </label>
+              <span className="text-xs text-slate-400">
+                Min 8 characters
+              </span>
+            </div>
+            <div className="relative">
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 pr-11 text-sm text-slate-900 shadow-sm outline-none transition-colors placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((visible) => !visible)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-pressed={showPassword}
+                className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
+              >
+                {showPassword ? (
+                  <EyeOffIcon className="h-3 w-3 text-current" />
+                ) : (
+                  <EyeIcon className="h-4 w-3 text-current" />
+                )}
+              </button>
+            </div>
+          </div>
 
-                <button
-                  type="submit"
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-500 px-4 py-3 text-sm font-semibold leading-5 text-white shadow-sm transition-colors hover:bg-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50"
-                >
-                  Sign In
-                  <ArrowRightIcon className="h-2.5 w-2.5 text-white" />
-                </button>
-              </div>
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+            <button
+              type="button"
+              onClick={() => {
+                setEmail("mentor@gmail.com");
+                setPassword("12345678");
+              }}
+              className="text-indigo-600 hover:underline"
+            >
+              Demo: Fill Mentor
+            </button>
+          </div>
 
-              <p className="flex items-center justify-center gap-1.5 text-xs font-normal leading-4 text-slate-500">
-                <LockIcon className="h-3 w-2.5 shrink-0 text-slate-400" />
-                Protected by enterprise grade 2FA &amp; SSO encryption.
-              </p>
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold leading-5 text-white shadow-sm transition-colors hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50 disabled:opacity-60"
+          >
+            {loading ? "Signing in..." : "Sign In"}
+            <ArrowRightIcon className="h-2.5 w-2.5 text-white" />
+          </button>
+        </div>
 
-              <p className="border-t border-slate-200/80 pt-6 text-center text-xs font-normal leading-4 text-slate-500">
-                Don&apos;t have an account?{" "}
-                <Link
-                  href="/sign-up"
-                  className="rounded-sm font-semibold text-indigo-600 transition-colors hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50"
-                >
-                  Sign up
-                </Link>
-              </p>
+        <p className="flex items-center justify-center gap-1.5 text-xs font-normal leading-4 text-slate-500">
+          <LockIcon className="h-3 w-2.5 shrink-0 text-slate-400" />
+          Protected by enterprise grade 2FA &amp; SSO encryption.
+        </p>
+
+        <p className="border-t border-slate-200/80 pt-6 text-center text-xs font-normal leading-4 text-slate-500">
+          Don&apos;t have an account?{" "}
+          <Link
+            href="/sign-up"
+            className="rounded-sm font-semibold text-indigo-600 transition-colors hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50"
+          >
+            Sign up
+          </Link>
+        </p>
       </form>
     </AuthShell>
   );

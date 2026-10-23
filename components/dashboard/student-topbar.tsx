@@ -8,6 +8,7 @@ import {
   MenuIcon,
 } from "@/components/dashboard/icons";
 import { currentTerm, studentProfile } from "@/components/dashboard/profile";
+import { useAuth } from "@/context/auth-context";
 
 const pageLabels: Record<string, string> = {
   "/dashboard": "Student Dashboard",
@@ -24,6 +25,14 @@ export function StudentTopbar({
 }) {
   const pathname = usePathname();
   const pageTitle = pageLabels[pathname] ?? "Student Dashboard";
+  const { user } = useAuth();
+  const displayName = user?.fullName || studentProfile.name;
+  const initials = displayName
+    .split(" ")
+    .map((p) => p[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
     <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between gap-3 border-b border-slate-200/60 bg-slate-50/80 px-4 shadow-[0px_1px_8px_0px_rgba(0,0,0,0.04)] backdrop-blur-md sm:px-5">
@@ -78,10 +87,10 @@ export function StudentTopbar({
 
         <Link
           href="/profile"
-          aria-label={`Open account menu for ${studentProfile.name}`}
+          aria-label={`Open account menu for ${displayName}`}
           className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-700 text-xs font-semibold leading-4 tracking-tight text-white shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] transition-colors hover:bg-indigo-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2"
         >
-          {studentProfile.initials}
+          {initials}
         </Link>
       </div>
     </header>

@@ -1,50 +1,35 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import {
-  findMentorSubmission,
-  mentorSubmissions,
-} from "@/components/mentor/data";
-import { buildProjectDetail } from "@/components/mentor/project-detail-data";
+import { Suspense, use } from "react";
 import { MentorProjectDetails } from "@/components/mentor/project-details";
 
-export function generateStaticParams() {
-  return mentorSubmissions.map((submission) => ({ id: submission.id }));
-}
+export const metadata: Metadata = {
+  title: "Project Review Details",
+  description: "Evaluate student code, verify repository links, and submit feedback.",
+};
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}): Promise<Metadata> {
-  const { id } = await params;
-  const submission = findMentorSubmission(id);
-
-  if (!submission) {
-    return { title: "Project Not Found" };
-  }
-
-  const detail = buildProjectDetail(submission);
-
-  return {
-    title: `${submission.project} — Milestone #${detail.milestoneNumber}`,
-    description: `Review ${submission.project} by ${submission.student.name} for ${detail.milestoneTitle}.`,
-  };
-}
-
-export default async function MentorProjectDetailsPage({
+function ReviewDetailsContent({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
-  const submission = findMentorSubmission(id);
+  const { id } = use(params);
+  return <MentorProjectDetails projectId={id} />;
+}
 
-  if (!submission) notFound();
-
+export default function MentorProjectDetailsPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   return (
-    <MentorProjectDetails
-      submission={submission}
-      detail={buildProjectDetail(submission)}
-    />
+    <Suspense
+      fallback={
+        <div className="flex h-64 items-center justify-center text-sm text-gray-500">
+          Loading review...
+        </div>
+      }
+    >
+      <ReviewDetailsContent params={params} />
+    </Suspense>
   );
 }

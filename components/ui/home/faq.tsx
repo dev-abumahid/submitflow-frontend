@@ -1,63 +1,62 @@
 const faqs = [
   {
-    question: "How does the single submission guardrail work?",
+    question: "What information is required to submit a project?",
     answer:
-      "Each student gets one active submission per milestone. Re-submissions require a mentor override, which prevents duplicate reviews and last-minute resubmission spam.",
+      "Students submit four core fields: Project Name (1–200 characters), Public Git Repository URL, Live Preview Deployment URL (both starting with http:// or https://), and a Project Description (1–5000 characters).",
   },
   {
-    question: "What automated checks are performed on student repos?",
+    question: "Can I edit my project after submitting?",
     answer:
-      "SubmitFlow verifies the GitHub repository is public, runs the configured build and test suites, checks the HTTPS preview endpoint, and validates required project files.",
+      "Yes, as long as your project status is PENDING. Once a mentor begins auditing your submission and marks it IN_PROGRESS, REJECTED, or APPROVED, the submission is locked from further edits to maintain grading consistency.",
   },
   {
-    question: "How do mentors track evaluation SLAs?",
+    question: "How does the mentor review process work?",
     answer:
-      "Every submission shows a live countdown. Mentors and program leads are alerted before an SLA is breached, with a dashboard highlighting the reviews most at risk.",
+      "Mentors have a dedicated Review Dashboard where they can access all student submissions, test the live deployment URL, inspect the source code, and assign a verdict (IN_PROGRESS, APPROVED, or REJECTED) accompanied by qualitative feedback.",
   },
   {
-    question: "Can custom rubrics and grading criteria be imported?",
+    question: "Will I stay logged in if I reload the webpage?",
     answer:
-      "Yes. Teams can import existing rubrics from CSV or build weighted criteria directly in the rubric editor, then reuse them across cohorts and milestones.",
+      "Yes! SubmitFlow uses secure token rotation with httpOnly cookies and client persistence. When you refresh the website, your session automatically validates in the background with zero logout disruptions.",
   },
   {
-    question: "Is SubmitFlow compatible with monorepos and microservices?",
+    question: "What account roles are supported?",
     answer:
-      "Yes. Configure the target package and preview service for each project. SubmitFlow runs checks against the correct workspace while still validating the full build.",
+      "SubmitFlow supports two distinct roles: STUDENT (can submit projects, track evaluation status, and view feedback) and MENTOR (can view all submissions, search/filter by status or student, and submit formal reviews).",
   },
 ] as const;
 
 export function Faq() {
   return (
-    <section id="faq" aria-labelledby="faq-heading" className="w-full">
-      <div className="mx-auto flex w-full max-w-4xl flex-col gap-10 px-4 py-12 sm:px-6 lg:px-10">
+    <section id="faq" aria-labelledby="faq-heading" className="w-full py-16 scroll-mt-16">
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-10 px-4 sm:px-6 lg:px-10">
         <div className="flex flex-col items-center gap-2 text-center">
           <p className="text-xs font-semibold uppercase leading-4 tracking-wide text-indigo-700">
-            Got questions?
+            Frequently Asked Questions
           </p>
           <h2
             id="faq-heading"
-            className="text-balance font-serif text-2xl font-bold leading-8 text-slate-900"
+            className="text-balance font-serif text-3xl font-bold text-slate-900"
           >
-            Frequently Asked Questions
+            Everything you need to know about SubmitFlow
           </h2>
-          <p className="max-w-xl text-pretty text-sm font-normal leading-5 text-gray-700">
-            Everything you need to know about implementing SubmitFlow in your
-            organization.
+          <p className="max-w-xl text-pretty text-sm text-gray-600">
+            Find answers to common questions about project submission rules, mentor reviews, and account permissions.
           </p>
         </div>
 
         <ul className="flex w-full flex-col gap-3">
           {faqs.map((faq) => (
             <li key={faq.question}>
-              <details className="group overflow-hidden rounded-xl bg-white shadow-sm">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 rounded-xl p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-600 [&::-webkit-details-marker]:hidden">
+              <details className="group overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-inset ring-slate-200/70 transition-all hover:ring-slate-300">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-600 [&::-webkit-details-marker]:hidden">
                   <span className="text-left text-base font-semibold leading-6 text-slate-900">
                     {faq.question}
                   </span>
-                  <ChevronDownIcon className="h-2 w-3 shrink-0 text-[#464555] transition-transform duration-200 group-open:rotate-180" />
+                  <ChevronDownIcon className="h-2 w-3 shrink-0 text-slate-500 transition-transform duration-200 group-open:rotate-180" />
                 </summary>
                 <div className="px-5 pb-5">
-                  <p className="border-t border-slate-100 pt-4 text-sm font-normal leading-6 text-gray-700">
+                  <p className="border-t border-slate-100 pt-4 text-sm leading-6 text-gray-600">
                     {faq.answer}
                   </p>
                 </div>

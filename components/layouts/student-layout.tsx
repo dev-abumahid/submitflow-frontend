@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { Suspense, useCallback, useState } from "react";
 import type { ReactNode } from "react";
 import { LeftSidebar } from "@/components/dashboard/left-sidebar";
 import { StudentTopbar } from "@/components/dashboard/student-topbar";
@@ -20,10 +20,14 @@ export function StudentLayout({ children }: { children: ReactNode }) {
         Skip to dashboard content
       </a>
 
-      <LeftSidebar open={sidebarOpen} onClose={closeSidebar} />
+      <Suspense fallback={null}>
+        <LeftSidebar open={sidebarOpen} onClose={closeSidebar} />
+      </Suspense>
 
       <div className="flex min-h-dvh flex-col lg:pl-64">
-        <StudentTopbar onOpenSidebar={openSidebar} />
+        <Suspense fallback={null}>
+          <StudentTopbar onOpenSidebar={openSidebar} />
+        </Suspense>
         <main
           id="student-main"
           className="flex-1 px-4 pb-8 pt-6 sm:px-5 lg:pb-5 lg:pt-8"
