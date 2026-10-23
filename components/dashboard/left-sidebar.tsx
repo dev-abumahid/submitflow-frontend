@@ -14,6 +14,7 @@ import {
   UserIcon,
   type IconProps,
 } from "@/components/dashboard/icons";
+import { useAuth } from "@/context/auth-context";
 import { studentProfile } from "@/components/dashboard/profile";
 
 const workspaceLinks: {
@@ -99,6 +100,16 @@ function SidebarBody({
   onNavigate?: () => void;
   onClose?: () => void;
 }) {
+  const { user, logout } = useAuth();
+  const displayName = user?.fullName || studentProfile.name;
+  const initials = displayName
+    .split(" ")
+    .map((p) => p[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+  const roleLabel = user?.role === "STUDENT" ? "Student Account" : user?.role || studentProfile.role;
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-slate-100 px-5">
@@ -170,24 +181,25 @@ function SidebarBody({
         <div className="flex items-center justify-between gap-2 rounded-lg bg-blue-50 p-2">
           <div className="flex min-w-0 items-center gap-2">
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xs font-semibold leading-4 tracking-tight text-white">
-              {studentProfile.initials}
+              {initials}
             </span>
             <div className="min-w-0">
               <p className="truncate text-xs font-semibold leading-4 text-slate-900">
-                {studentProfile.name}
+                {displayName}
               </p>
               <p className="text-xs font-semibold leading-4 tracking-tight text-gray-700">
-                {studentProfile.role}
+                {roleLabel}
               </p>
             </div>
           </div>
-          <Link
-            href="/sign-in"
+          <button
+            type="button"
+            onClick={() => logout()}
             aria-label="Sign out"
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-700 transition-colors hover:bg-white hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
           >
             <LogOutIcon className="h-3.5 w-3.5" />
-          </Link>
+          </button>
         </div>
       </div>
     </div>

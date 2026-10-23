@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import axios from "axios";
+import { authApi } from "@/lib/api";
+import { useAuth } from "@/context/auth-context";
 import {
   CheckIcon,
   EyeIcon,
@@ -56,6 +59,7 @@ function getPasswordScore(password: string) {
 }
 
 export function ProfilePage({ account }: { account: ProfileAccount }) {
+  const { user } = useAuth();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -63,7 +67,30 @@ export function ProfilePage({ account }: { account: ProfileAccount }) {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [attempted, setAttempted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+
+  const displayName = user?.fullName || account.name;
+  const initials = displayName
+    .split(" ")
+    .map((p) => p[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  const displayAccount: ProfileAccount = {
+    ...account,
+    name: displayName,
+    email: user?.email || account.email,
+    initials,
+    accountId: user?.id ? user.id.slice(0, 8) : account.accountId,
+    role:
+      user?.role === "STUDENT"
+        ? "Student"
+        : user?.role === "MENTOR"
+        ? "Lead Mentor"
+        : account.role,
+  };
 
   const passwordScore = getPasswordScore(newPassword);
   const passwordsMatch =
@@ -99,7 +126,7 @@ export function ProfilePage({ account }: { account: ProfileAccount }) {
     setConfirmPassword("");
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setAttempted(true);
     setFeedback(null);
@@ -136,13 +163,32 @@ export function ProfilePage({ account }: { account: ProfileAccount }) {
       return;
     }
 
-    resetPasswordFields();
-    setAttempted(false);
-    setFeedback({
-      tone: "success",
-      message:
-        "Password updated successfully. Your other active sessions will be signed out.",
-    });
+    setSubmitting(true);
+    try {
+      await authApi.changePassword({
+        oldPassword: currentPassword,
+        newPassword,
+      });
+      resetPasswordFields();
+      setAttempted(false);
+      setFeedback({
+        tone: "success",
+        message:
+          "Password updated successfully. Other active sessions were signed out.",
+      });
+    } catch (err: unknown) {
+      let msg = "Failed to update password. Please check your current password.";
+      if (axios.isAxiosError(err) && err.response?.data) {
+        const data = err.response.data as { message?: string };
+        msg = data.message || msg;
+      }
+      setFeedback({
+        tone: "error",
+        message: msg,
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -173,20 +219,20 @@ export function ProfilePage({ account }: { account: ProfileAccount }) {
         >
           <div className="flex items-center gap-3">
             <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-indigo-700 text-lg font-semibold leading-6 text-white shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]">
-              {account.initials}
+              {displayAccount.initials}
             </span>
             <div className="min-w-0">
               <h2
                 id="profile-summary-heading"
                 className="truncate text-lg font-semibold leading-6 text-slate-900"
               >
-                {account.name}
+                {displayAccount.name}
               </h2>
               <p className="truncate text-xs font-normal leading-4 text-gray-700">
-                {account.email}
+                {displayAccount.email}
               </p>
               <span className="mt-1.5 inline-flex rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold uppercase leading-4 tracking-wide text-indigo-700">
-                {account.role}
+                {displayAccount.role}
               </span>
             </div>
           </div>
@@ -195,19 +241,19 @@ export function ProfilePage({ account }: { account: ProfileAccount }) {
             <div className="flex items-center justify-between gap-3">
               <dt className="font-medium text-gray-700">Account ID</dt>
               <dd className="font-semibold text-slate-900">
-                {account.accountId}
+                {displayAccount.accountId}
               </dd>
             </div>
             <div className="flex items-center justify-between gap-3">
               <dt className="font-medium text-gray-700">Workspace</dt>
               <dd className="text-right font-semibold text-slate-900">
-                {account.workspace}
+                {displayAccount.workspace}
               </dd>
             </div>
             <div className="flex items-center justify-between gap-3">
               <dt className="font-medium text-gray-700">Member since</dt>
               <dd className="font-semibold text-slate-900">
-                {account.memberSince}
+                {displayAccount.memberSince}
               </dd>
             </div>
           </dl>
@@ -222,7 +268,7 @@ export function ProfilePage({ account }: { account: ProfileAccount }) {
                   Account protection active
                 </p>
                 <p className="text-[11px] leading-4 text-gray-700">
-                  Password updated {account.passwordUpdated}
+                  Password updated {displayAccount.passwordUpdated}
                 </p>
               </div>
             </div>
@@ -400,11 +446,11 @@ export function ProfilePage({ account }: { account: ProfileAccount }) {
               </p>
               <button
                 type="submit"
-                disabled={!isFormValid && attempted}
+                disabled={(!isFormValid && attempted) || submitting}
                 className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold leading-5 text-white shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2"
               >
                 <LockIcon className="h-4 w-4" />
-                Update Password
+                {submitting ? "Updating..." : "Update Password"}
               </button>
             </div>
           </form>

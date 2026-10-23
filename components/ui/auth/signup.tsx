@@ -1,31 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
-import type { ComponentType } from "react";
+import axios from "axios";
 import { AuthShell } from "@/components/ui/auth/auth-shell";
-
-const terminalChecks: {
-  label: string;
-  icon: ComponentType<{ className?: string }>;
-  tone: string;
-}[] = [
-  {
-    label: "38 Automated CI Tests Passed",
-    icon: CheckCircleIcon,
-    tone: "text-emerald-300",
-  },
-  {
-    label: "Lint & Static Analysis: 100%",
-    icon: BadgeCheckIcon,
-    tone: "text-emerald-300",
-  },
-  {
-    label: "Mentor Assigned: Sarah Lin (Staff Eng)",
-    icon: UserCheckIcon,
-    tone: "text-sky-200",
-  },
-];
+import { useAuth } from "@/context/auth-context";
 
 const strengthLabels = ["Too short", "Weak", "Fair", "Good", "Strong"];
 const strengthColors = [
@@ -63,16 +43,57 @@ function getStrengthSegmentColor(score: number, index: number) {
 }
 
 export function Signup() {
+  const router = useRouter();
+  const { register } = useAuth();
   const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const passwordScore = getPasswordScore(password);
   const nameIsValid = fullName.trim().length >= 2;
   const passwordsMatch =
     confirmPassword.length > 0 && password === confirmPassword;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!passwordsMatch) {
+      setErrorMessage("Passwords do not match.");
+      return;
+    }
+    if (password.length < 8) {
+      setErrorMessage("Password must be at least 8 characters.");
+      return;
+    }
+
+    setErrorMessage(null);
+    setLoading(true);
+
+    try {
+      await register(email, password, fullName);
+      router.push("/dashboard");
+    } catch (err: unknown) {
+      let serverMessage =
+        "Registration failed. Please check your information and try again.";
+      if (axios.isAxiosError(err) && err.response?.data) {
+        const data = err.response.data as {
+          message?: string;
+          errorSources?: { message: string }[];
+        };
+        serverMessage =
+          data.message ||
+          data.errorSources?.[0]?.message ||
+          serverMessage;
+      }
+      setErrorMessage(serverMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <AuthShell
@@ -80,7 +101,7 @@ export function Signup() {
       panelClassName="bg-white"
       promo={<PromoPanel />}
     >
-      <form className="flex flex-col gap-5">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         <div className="flex flex-col gap-1">
           <p className="inline-flex w-fit items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold leading-4 tracking-tight text-indigo-700">
             <AcademicCapIcon className="h-3 w-3.5 text-indigo-700" />
@@ -97,6 +118,12 @@ export function Signup() {
             milestones.
           </p>
         </div>
+
+        {errorMessage && (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-3.5 text-xs font-medium text-red-700">
+            {errorMessage}
+          </div>
+        )}
 
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-1">
@@ -145,6 +172,8 @@ export function Signup() {
                 type="email"
                 autoComplete="email"
                 required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="maya@university.edu or your personal email"
                 className="w-full rounded-lg border border-[#c7c4d8] bg-white py-2.5 pl-10 pr-3 text-sm text-slate-900 shadow-sm outline-none transition-colors placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30"
               />
@@ -300,9 +329,10 @@ export function Signup() {
 
           <button
             type="submit"
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-700 px-3 py-3.5 text-sm font-medium leading-5 text-white shadow-lg shadow-indigo-500/20 transition-colors hover:bg-indigo-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2"
+            disabled={loading}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-700 px-3 py-3.5 text-sm font-medium leading-5 text-white shadow-lg shadow-indigo-500/20 transition-colors hover:bg-indigo-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 disabled:opacity-60"
           >
-            Create Student Account
+            {loading ? "Creating Account..." : "Create Student Account"}
             <ArrowRightIcon className="h-3 w-3 text-white" />
           </button>
         </div>
@@ -380,7 +410,7 @@ function PromoPanel() {
               className="h-1.5 w-1.5 rounded-full bg-emerald-400"
               aria-hidden="true"
             />
-            Cohort v4.8 Admissions Open
+            Student Workspace
           </span>
         </div>
 
@@ -390,73 +420,83 @@ function PromoPanel() {
             <span className="block text-indigo-100">Start submitting.</span>
           </p>
           <p className="mt-1.5 max-w-lg text-pretty text-sm font-normal leading-6 text-white/80">
-            Streamline your milestones, receive granular inline mentor reviews,
-            automated CI test validations, and accelerate your engineering
-            growth in one unified student hub.
+            Submit your capstone repository, track real-time evaluation status,
+            and receive qualitative mentor feedback in one unified student workspace.
           </p>
         </div>
       </div>
 
-      <div className="relative z-10 mt-8 overflow-hidden rounded-xl border border-white/15 bg-white/10 p-5 shadow-xl backdrop-blur-md">
-        <span
-          className="pointer-events-none absolute right-0 top-0 h-36 w-36 rounded-full bg-purple-300/10 blur-[20px]"
-          aria-hidden="true"
-        />
-
-        <div className="relative flex items-center justify-between gap-3 border-b border-white/10 pb-2">
+      {/* Project Submission Theme Card */}
+      <div className="relative z-10 mt-8 overflow-hidden rounded-2xl border border-white/20 bg-slate-900/40 p-5 shadow-2xl backdrop-blur-md">
+        {/* Top window controls and project status badge */}
+        <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-3">
           <div className="flex items-center gap-2">
-            <span className="flex -space-x-2" aria-hidden="true">
-              <span className="h-2.5 w-2.5 rounded-full bg-red-400/80" />
-              <span className="h-2.5 w-2.5 rounded-full bg-amber-400/80" />
-              <span className="h-2.5 w-2.5 rounded-full bg-emerald-400/80" />
+            <span className="flex gap-1.5" aria-hidden="true">
+              <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
+              <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
             </span>
-            <span className="pl-2 font-mono text-xs font-normal leading-4 text-white/60">
-              student-env ~/sprint-04
+            <span className="pl-1.5 font-mono text-xs text-white/70">
+              submitflow // capstone-submission
             </span>
           </div>
-          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-xs font-semibold leading-4 tracking-tight text-emerald-300">
-            <span
-              className="h-1.5 w-1.5 rounded-full bg-emerald-400"
-              aria-hidden="true"
-            />
-            Ready to Ship
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/20 px-2.5 py-0.5 text-xs font-semibold text-amber-300 backdrop-blur-sm">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+            PENDING
           </span>
         </div>
 
-        <div className="relative flex flex-col gap-2.5 py-3">
-          <p className="flex items-center gap-2 font-mono text-xs font-normal leading-4 text-white/90">
-            <span className="text-indigo-300">$</span>
-            git push submitflow main
+        {/* Project Name & Description */}
+        <div className="pt-3.5 pb-2">
+          <div className="flex items-center justify-between">
+            <h3 className="font-serif text-base font-bold text-white">
+              DevPulse — Real-Time Systems Health Monitor
+            </h3>
+            <span className="rounded-md bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-indigo-200">
+              Cohort 12
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-indigo-100/75 line-clamp-2 leading-relaxed">
+            Telemetry streaming observability dashboard built with Next.js, WebSockets, and automated incident alerting probes.
           </p>
-          <ul className="flex flex-col gap-1.5 border-l border-white/10 pl-3">
-            {terminalChecks.map((check) => {
-              const Icon = check.icon;
-
-              return (
-                <li
-                  key={check.label}
-                  className={`flex items-center gap-2 text-xs font-normal leading-4 ${check.tone}`}
-                >
-                  <Icon className="h-3 w-3 shrink-0" />
-                  {check.label}
-                </li>
-              );
-            })}
-          </ul>
         </div>
 
-        <div className="relative flex flex-col gap-1.5 border-t border-white/10 pt-2">
-          <div className="flex items-center justify-between gap-3 text-xs leading-4">
-            <span className="font-normal text-white/70">
-              Milestone 04 Progress
-            </span>
-            <span className="font-semibold text-white">
-              80% to Capstone Review
-            </span>
+        {/* Project Verification Links */}
+        <div className="mt-2.5 grid grid-cols-2 gap-2 text-xs">
+          <div className="flex items-center justify-between rounded-lg bg-white/10 p-2.5 backdrop-blur-sm border border-white/10">
+            <span className="text-white/80 font-medium">Git Repo</span>
+            <span className="text-emerald-300 font-semibold text-[11px]">✓ Verified</span>
           </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-white/20">
-            <div className="h-full w-4/5 rounded-full bg-linear-to-r from-emerald-400 to-indigo-100" />
+          <div className="flex items-center justify-between rounded-lg bg-white/10 p-2.5 backdrop-blur-sm border border-white/10">
+            <span className="text-white/80 font-medium">Live Preview</span>
+            <span className="text-emerald-300 font-semibold text-[11px]">HTTPS 200 OK</span>
           </div>
+        </div>
+
+        {/* Real-time Status Lifecycle Pipeline */}
+        <div className="mt-3.5 rounded-xl bg-white/5 p-3 border border-white/10">
+          <div className="flex items-center justify-between text-[11px] text-white/70">
+            <span>Evaluation Lifecycle</span>
+            <span className="font-semibold text-indigo-200">Stage 1 of 3</span>
+          </div>
+          <div className="mt-2 flex items-center gap-1.5">
+            <span className="flex-1 h-1.5 rounded-full bg-amber-400" title="PENDING" />
+            <span className="flex-1 h-1.5 rounded-full bg-white/20" title="IN_PROGRESS" />
+            <span className="flex-1 h-1.5 rounded-full bg-white/20" title="APPROVED" />
+          </div>
+          <div className="mt-2 flex items-center justify-between text-[10px] text-white/60">
+            <span className="font-semibold text-amber-300">1. PENDING (Editable)</span>
+            <span>2. IN_PROGRESS</span>
+            <span>3. DECISION</span>
+          </div>
+        </div>
+
+        {/* Mentor Review Snippet */}
+        <div className="mt-3 flex items-start gap-2 border-t border-white/10 pt-3 text-xs text-indigo-100/80">
+          <CheckCircleIcon className="h-4 w-4 shrink-0 text-emerald-400 mt-0.5" />
+          <p className="text-[11px] leading-relaxed">
+            <span className="font-semibold text-white">Mentor Review SLA:</span> Projects start in Pending, allowing you to update code and preview URLs until mentor evaluation begins.
+          </p>
         </div>
       </div>
     </div>
@@ -579,40 +619,6 @@ function CheckCircleIcon({ className }: { className?: string }) {
     >
       <path
         d="M4.65833 7.90833L8.47708 4.08958L7.71875 3.33125L4.65833 6.39167L3.11458 4.84792L2.35625 5.60625L4.65833 7.90833V7.90833M5.41667 10.8333C4.66736 10.8333 3.96319 10.6911 3.30417 10.4068C2.64514 10.1224 2.07188 9.73646 1.58438 9.24896C1.09687 8.76146 0.710938 8.18819 0.426562 7.52917C0.142187 6.87014 0 6.16597 0 5.41667C0 4.66736 0.142187 3.96319 0.426562 3.30417C0.710938 2.64514 1.09687 2.07188 1.58438 1.58438C2.07188 1.09687 2.64514 0.710938 3.30417 0.426562C3.96319 0.142187 4.66736 0 5.41667 0C6.16597 0 6.87014 0.142187 7.52917 0.426562C8.18819 0.710938 8.76146 1.09687 9.24896 1.58438C9.73646 2.07188 10.1224 2.64514 10.4068 3.30417C10.6911 3.96319 10.8333 4.66736 10.8333 5.41667C10.8333 6.16597 10.6911 6.87014 10.4068 7.52917C10.1224 8.18819 9.73646 8.76146 9.24896 9.24896C8.76146 9.73646 8.18819 10.1224 7.52917 10.4068C6.87014 10.6911 6.16597 10.8333 5.41667 10.8333V10.8333M5.41667 9.75C6.62639 9.75 7.65104 9.33021 8.49063 8.49063C9.33021 7.65104 9.75 6.62639 9.75 5.41667C9.75 4.20694 9.33021 3.18229 8.49063 2.34271C7.65104 1.50312 6.62639 1.08333 5.41667 1.08333C4.20694 1.08333 3.18229 1.50312 2.34271 2.34271C1.50312 3.18229 1.08333 4.20694 1.08333 5.41667C1.08333 6.62639 1.50312 7.65104 2.34271 8.49063C3.18229 9.33021 4.20694 9.75 5.41667 9.75V9.75"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
-
-function BadgeCheckIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 15 14"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
-      <path
-        d="M5.06667 14L3.8 11.8667L1.4 11.3333L1.63333 8.86667L0 7L1.63333 5.13333L1.4 2.66667L3.8 2.13333L5.06667 0L7.33333 0.966667L9.6 0L10.8667 2.13333L13.2667 2.66667L13.0333 5.13333L14.6667 7L13.0333 8.86667L13.2667 11.3333L10.8667 11.8667L9.6 14L7.33333 13.0333L5.06667 14V14M5.63333 12.3L7.33333 11.5667L9.06667 12.3L10 10.7L11.8333 10.2667L11.6667 8.4L12.9 7L11.6667 5.56667L11.8333 3.7L10 3.3L9.03333 1.7L7.33333 2.43333L5.6 1.7L4.66667 3.3L2.83333 3.7L3 5.56667L1.76667 7L3 8.4L2.83333 10.3L4.66667 10.7L5.63333 12.3V12.3M6.63333 9.36667L10.4 5.6L9.46667 4.63333L6.63333 7.46667L5.2 6.06667L4.26667 7L6.63333 9.36667V9.36667"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
-
-function UserCheckIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 15 11"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
-      <path
-        d="M11.0333 5.33333L8.66667 2.96667L9.61667 2.03333L11.0333 3.45L13.8667 0.616667L14.8 1.56667L11.0333 5.33333V5.33333M5.33333 5.33333C4.6 5.33333 3.97222 5.07222 3.45 4.55C2.92778 4.02778 2.66667 3.4 2.66667 2.66667C2.66667 1.93333 2.92778 1.30556 3.45 0.783333C3.97222 0.261111 4.6 0 5.33333 0C6.06667 0 6.69444 0.261111 7.21667 0.783333C7.73889 1.30556 8 1.93333 8 2.66667C8 3.4 7.73889 4.02778 7.21667 4.55C6.69444 5.07222 6.06667 5.33333 5.33333 5.33333V5.33333M0 10.6667V8.8C0 8.42222 0.0972222 8.075 0.291667 7.75833C0.486111 7.44167 0.744444 7.2 1.06667 7.03333C1.75556 6.68889 2.45556 6.43056 3.16667 6.25833C3.87778 6.08611 4.6 6 5.33333 6C6.06667 6 6.78889 6.08611 7.5 6.25833C8.21111 6.43056 8.91111 6.68889 9.6 7.03333C9.92222 7.2 10.1806 7.44167 10.375 7.75833C10.5694 8.075 10.6667 8.42222 10.6667 8.8V10.6667H0V10.6667M1.33333 9.33333H9.33333V8.8C9.33333 8.67778 9.30278 8.56667 9.24167 8.46667C9.18056 8.36667 9.1 8.28889 9 8.23333C8.4 7.93333 7.79444 7.70833 7.18333 7.55833C6.57222 7.40833 5.95556 7.33333 5.33333 7.33333C4.71111 7.33333 4.09444 7.40833 3.48333 7.55833C2.87222 7.70833 2.26667 7.93333 1.66667 8.23333C1.56667 8.28889 1.48611 8.36667 1.425 8.46667C1.36389 8.56667 1.33333 8.67778 1.33333 8.8V9.33333V9.33333M5.33333 4C5.7 4 6.01389 3.86944 6.275 3.60833C6.53611 3.34722 6.66667 3.03333 6.66667 2.66667C6.66667 2.3 6.53611 1.98611 6.275 1.725C6.01389 1.46389 5.7 1.33333 5.33333 1.33333C4.96667 1.33333 4.65278 1.46389 4.39167 1.725C4.13056 1.98611 4 2.3 4 2.66667C4 3.03333 4.13056 3.34722 4.39167 3.60833C4.65278 3.86944 4.96667 4 5.33333 4V4"
         fill="currentColor"
       />
     </svg>
